@@ -188,7 +188,14 @@ try:
       # originServerRequest is the first line in the request and
       # originServerRequestHeader is the second line in the request
       # ~~~~ INSERT CODE ~~~~
-        # originServerRequest = 
+    originServerRequest = method + " " + resource + " " + version
+        #  Request-Line   = Method SP Request-URI SP HTTP-Version CRLF from 
+        #RFC 2616
+    originServerRequestHeader = "Host: " + hostname + "\r\n\r\n"
+    #HTTP/1.1 proxies MUST parse the Connection header field before a message is forwarded
+    
+
+
       # ~~~~ END CODE INSERT ~~~~
 
       # Construct the request to send to the origin server
@@ -209,10 +216,12 @@ try:
 
       # Get the response from the origin server
       # ~~~~ INSERT CODE ~~~~
+    message_bytes = originServerSocket.recv(BUFFER_SIZE)
       # ~~~~ END CODE INSERT ~~~~
 
       # Send the response to the client
       # ~~~~ INSERT CODE ~~~~
+    clientSocket.sendall(message_bytes)
       # ~~~~ END CODE INSERT ~~~~
 
       # Create a new file in the cache for the requested file.
