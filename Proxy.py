@@ -20,13 +20,13 @@ proxyPort = int(args.port)
 try:
   # Create a server socket
   # ~~~~ INSERT CODE ~~~~
-    from socket import *
-    serverSocket = socket(AF_INET, SOCK_STREAM) #from notes
+  from socket import *
+  serverSocket = socket(AF_INET, SOCK_STREAM) #from notes
 
 
 
   # ~~~~ END CODE INSERT ~~~~
-    print ('Created socket')
+  print ('Created socket')
 except:
   print ('Failed to create socket')
   sys.exit()
@@ -34,14 +34,12 @@ except:
 try:
   # Bind the the server socket to a host and port
   # ~~~~ INSERT CODE ~~~~
-    serverSocket.bind((proxyHost, proxyPort)) 
+  serverSocket.bind((proxyHost, proxyPort)) 
     # creating a proxy server, we are using the host and port from above as 
     # it allows us to supply arguments when running the server as to what
     # the port and host address should be
-
-
   # ~~~~ END CODE INSERT ~~~~
-    print ('Port is bound')
+  print ('Port is bound')
 except:
   print('Port is already in use')
   sys.exit()
@@ -49,12 +47,12 @@ except:
 try:
   # Listen on the server socket
   # ~~~~ INSERT CODE ~~~~
-    serverSocket.listen(1) # from notes
+  serverSocket.listen(1) # from notes
 
 
 
   # ~~~~ END CODE INSERT ~~~~
-    print ('Listening to socket')
+  print ('Listening to socket')
 except:
   print ('Failed to listen')
   sys.exit()
@@ -149,7 +147,7 @@ while True:
         #re encodes the decoded file to send back to the socket
 
 
-
+    
     # ~~~~ END CODE INSERT ~~~~
     cacheFile.close()
     print ('Sent to the client:')
@@ -164,89 +162,95 @@ while True:
     #taken from notes, adapted clientSocket to originSS
 
 
-    
+
     # ~~~~ END CODE INSERT ~~~~
 
     print ('Connecting to:\t\t' + hostname + '\n')
-try:
+    try:
       # Get the IP address for a hostname
-    address = socket.gethostbyname(hostname)
+      address = gethostbyname(hostname)
       # Connect to the origin server
       # ~~~~ INSERT CODE ~~~~
-    originServerSocket.connect((address,80)) 
+      originServerSocket.connect((address,80)) 
         #80 is the default, address is hostname is above
-
-
-
       # ~~~~ END CODE INSERT ~~~~
-    print ('Connected to origin Server')
+      print ('Connected to origin Server')
 
-    originServerRequest = ''
-    originServerRequestHeader = ''
+      originServerRequest = ''
+      originServerRequestHeader = ''
       # Create origin server request line and headers to send
       # and store in originServerRequestHeader and originServerRequest
       # originServerRequest is the first line in the request and
       # originServerRequestHeader is the second line in the request
       # ~~~~ INSERT CODE ~~~~
-    originServerRequest = method + " " + resource + " " + version
+      originServerRequest = method + " " + resource + " " + version
         #  Request-Line   = Method SP Request-URI SP HTTP-Version CRLF from 
         #RFC 2616
-    originServerRequestHeader = "Host: " + hostname + "\r\n\r\n"
+      originServerRequestHeader = "Host: " + hostname + "\r\n" + "Connection: close\r\n" + "Accept: */*\r\n\r\n"
+
     #HTTP/1.1 proxies MUST parse the Connection header field before a message is forwarded
-    
-
-
       # ~~~~ END CODE INSERT ~~~~
 
       # Construct the request to send to the origin server
-    request = originServerRequest + '\r\n' + originServerRequestHeader + '\r\n\r\n'
+      request = originServerRequest + '\r\n' + originServerRequestHeader 
 
       # Request the web resource from origin server
-    print ('Forwarding request to origin server:')
-    for line in request.split('\r\n'):
+      print ('Forwarding request to origin server:')
+      for line in request.split('\r\n'):
         print ('> ' + line)
 
-    try:
+      try:
         originServerSocket.sendall(request.encode())
-    except socket.error:
+      except socket.error:
         print ('Forward request to origin failed')
         sys.exit()
 
-    print('Request sent to origin server\n')
+      print('Request sent to origin server\n')
 
       # Get the response from the origin server
       # ~~~~ INSERT CODE ~~~~
-    message_bytes = originServerSocket.recv(BUFFER_SIZE)
+      message_bytes = originServerSocket.recv(BUFFER_SIZE)
+
+
+
       # ~~~~ END CODE INSERT ~~~~
 
       # Send the response to the client
       # ~~~~ INSERT CODE ~~~~
-    clientSocket.sendall(message_bytes)
+      clientSocket.sendall(message_bytes)
+
+
+
       # ~~~~ END CODE INSERT ~~~~
 
       # Create a new file in the cache for the requested file.
-    cacheDir, file = os.path.split(cacheLocation)
-    print ('cached directory ' + cacheDir)
-    if not os.path.exists(cacheDir):
+      cacheDir, file = os.path.split(cacheLocation)
+      print ('cached directory ' + cacheDir)
+      if not os.path.exists(cacheDir):
         os.makedirs(cacheDir)
-    cacheFile = open(cacheLocation, 'wb')
+      cacheFile = open(cacheLocation, 'wb')
 
       # Save origin server response in the cache file
       # ~~~~ INSERT CODE ~~~~
+      cacheFile.write(message_bytes)
+
+
+      
       # ~~~~ END CODE INSERT ~~~~
-    cacheFile.close()
-    print ('cache file closed')
+      cacheFile.close()
+      print ('cache file closed')
 
       # finished communicating with origin server - shutdown socket writes
-    print ('origin response received. Closing sockets')
-    originServerSocket.close()
+      print ('origin response received. Closing sockets')
+      originServerSocket.close()
        
-    clientSocket.shutdown(socket.SHUT_WR)
-    print ('client socket shutdown for writing')
-except OSError as err:
-    print ('origin server request failed. ' + err.strerror)
+      clientSocket.shutdown(SHUT_WR)
+      clientSocket.close()
+      print ('client socket shutdown for writing')
+    except OSError as err:
+      print ('origin server request failed. ' + err.strerror)
 
-try:
+  try:
     clientSocket.close()
-except:
+  except:
     print ('Failed to close client socket')
