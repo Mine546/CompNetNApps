@@ -92,23 +92,6 @@ while True:
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   # ~~~~ END CODE INSERT ~~~~
   message = message_bytes.decode('utf-8')
   print ('Received request:')
@@ -161,8 +144,9 @@ while True:
     # ProxyServer finds a cache hit
     # Send back response to client 
     # ~~~~ INSERT CODE ~~~~
-#not confident on thuis yet
-
+    for line in cacheData:
+        clientSocket.sendall(line.encode()) 
+        #re encodes the decoded file to send back to the socket
 
 
 
@@ -179,44 +163,49 @@ while True:
     originServerSocket = socket(AF_INET,SOCK_STREAM)
     #taken from notes, adapted clientSocket to originSS
 
+
     
     # ~~~~ END CODE INSERT ~~~~
 
     print ('Connecting to:\t\t' + hostname + '\n')
-    try:
+try:
       # Get the IP address for a hostname
-      address = socket.gethostbyname(hostname)
+    address = socket.gethostbyname(hostname)
       # Connect to the origin server
       # ~~~~ INSERT CODE ~~~~
-        clientSocket.connect((serverName,80)) #80 is the default
+    originServerSocket.connect((address,80)) 
+        #80 is the default, address is hostname is above
+
+
 
       # ~~~~ END CODE INSERT ~~~~
-      print ('Connected to origin Server')
+    print ('Connected to origin Server')
 
-      originServerRequest = ''
-      originServerRequestHeader = ''
+    originServerRequest = ''
+    originServerRequestHeader = ''
       # Create origin server request line and headers to send
       # and store in originServerRequestHeader and originServerRequest
       # originServerRequest is the first line in the request and
       # originServerRequestHeader is the second line in the request
       # ~~~~ INSERT CODE ~~~~
+        # originServerRequest = 
       # ~~~~ END CODE INSERT ~~~~
 
       # Construct the request to send to the origin server
-      request = originServerRequest + '\r\n' + originServerRequestHeader + '\r\n\r\n'
+    request = originServerRequest + '\r\n' + originServerRequestHeader + '\r\n\r\n'
 
       # Request the web resource from origin server
-      print ('Forwarding request to origin server:')
-      for line in request.split('\r\n'):
+    print ('Forwarding request to origin server:')
+    for line in request.split('\r\n'):
         print ('> ' + line)
 
-      try:
+    try:
         originServerSocket.sendall(request.encode())
-      except socket.error:
+    except socket.error:
         print ('Forward request to origin failed')
         sys.exit()
 
-      print('Request sent to origin server\n')
+    print('Request sent to origin server\n')
 
       # Get the response from the origin server
       # ~~~~ INSERT CODE ~~~~
@@ -227,28 +216,28 @@ while True:
       # ~~~~ END CODE INSERT ~~~~
 
       # Create a new file in the cache for the requested file.
-      cacheDir, file = os.path.split(cacheLocation)
-      print ('cached directory ' + cacheDir)
-      if not os.path.exists(cacheDir):
+    cacheDir, file = os.path.split(cacheLocation)
+    print ('cached directory ' + cacheDir)
+    if not os.path.exists(cacheDir):
         os.makedirs(cacheDir)
-      cacheFile = open(cacheLocation, 'wb')
+    cacheFile = open(cacheLocation, 'wb')
 
       # Save origin server response in the cache file
       # ~~~~ INSERT CODE ~~~~
       # ~~~~ END CODE INSERT ~~~~
-      cacheFile.close()
-      print ('cache file closed')
+    cacheFile.close()
+    print ('cache file closed')
 
       # finished communicating with origin server - shutdown socket writes
-      print ('origin response received. Closing sockets')
-      originServerSocket.close()
+    print ('origin response received. Closing sockets')
+    originServerSocket.close()
        
-      clientSocket.shutdown(socket.SHUT_WR)
-      print ('client socket shutdown for writing')
-    except OSError as err:
-      print ('origin server request failed. ' + err.strerror)
+    clientSocket.shutdown(socket.SHUT_WR)
+    print ('client socket shutdown for writing')
+except OSError as err:
+    print ('origin server request failed. ' + err.strerror)
 
-  try:
+try:
     clientSocket.close()
-  except:
+except:
     print ('Failed to close client socket')
