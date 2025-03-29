@@ -92,6 +92,23 @@ while True:
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   # ~~~~ END CODE INSERT ~~~~
   message = message_bytes.decode('utf-8')
   print ('Received request:')
@@ -144,6 +161,11 @@ while True:
     # ProxyServer finds a cache hit
     # Send back response to client 
     # ~~~~ INSERT CODE ~~~~
+#not confident on thuis yet
+
+
+
+
     # ~~~~ END CODE INSERT ~~~~
     cacheFile.close()
     print ('Sent to the client:')
@@ -154,6 +176,10 @@ while True:
     # Create a socket to connect to origin server
     # and store in originServerSocket
     # ~~~~ INSERT CODE ~~~~
+    originServerSocket = socket(AF_INET,SOCK_STREAM)
+    #taken from notes, adapted clientSocket to originSS
+
+    
     # ~~~~ END CODE INSERT ~~~~
 
     print ('Connecting to:\t\t' + hostname + '\n')
@@ -162,6 +188,8 @@ while True:
       address = socket.gethostbyname(hostname)
       # Connect to the origin server
       # ~~~~ INSERT CODE ~~~~
+        clientSocket.connect((serverName,80)) #80 is the default
+
       # ~~~~ END CODE INSERT ~~~~
       print ('Connected to origin Server')
 
