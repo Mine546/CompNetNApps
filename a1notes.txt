@@ -1,5 +1,4 @@
-1
-1.1
+
 Browser will send absolute uri to the proxy
 
  The absoluteURI form is REQUIRED when the request is being made to a
@@ -13,7 +12,7 @@ Browser will send absolute uri to the proxy
 
 
 
-1.2
+
 response will lookmlike this:
 
    Response      = Status-Line               ; Section 6.1
@@ -23,26 +22,6 @@ response will lookmlike this:
                        CRLF
                        [ message-body ]          ; Section 7.2
 
-
-1.3
-header should always be via
-
-
-2
-2.1
-idk
-
-
-2.2
-idk yet
-
-
-2.3
-idk yet
-
-
-2.4
-from the request
 
 
 
