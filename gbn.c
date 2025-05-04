@@ -56,8 +56,8 @@ bool IsCorrupted(struct pkt packet)
 
 
 /********* Sender (A) variables and functions ************/
-
-static struct pkt buffer[WINDOWSIZE];  /* array for storing packets waiting for ACK */
+//seqspace instead of windowsize, as selective repeat must track each sequence number in the space
+static struct pkt buffer[SEQSPACE];  /* array for storing packets waiting for ACK */
 static int windowfirst, windowlast;    /* array indexes of the first/last packet awaiting ACK */
 static int windowcount;                /* the number of packets currently awaiting an ACK */
 static int A_nextseqnum;               /* the next sequence number to be used by the sender */
@@ -204,7 +204,8 @@ void A_init(void)
 
 static int expectedseqnum; /* the sequence number expected next by the receiver */
 static int B_nextseqnum;   /* the sequence number for the next packets sent by B */
-
+static struct pkt recv_buffer[SEQSPACE];  // to store received packets
+static bool received[SEQSPACE];           // track received sequence numbers
 
 /* called from layer 3, when a packet arrives for layer 4 at B*/
 void B_input(struct pkt packet)
@@ -258,6 +259,10 @@ void B_init(void)
 {
   expectedseqnum = 0;
   B_nextseqnum = 1;
+  //ensures that all spaces are correctly classified as empty before starting transfer
+  for (int i = 0; i < SEQSPACE; i++) {
+    received[i] = false;
+  }
 }
 
 /******************************************************************************
