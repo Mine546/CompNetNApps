@@ -232,6 +232,7 @@ void B_input(struct pkt packet)
     /* aaaaaaaadeliver in-order packets starting from expectedseqnum*/
     while (received[expectedseqnum]) {
       tolayer5(B, recv_buffer[expectedseqnum].payload);
+      packets_received++; /*whoops*/
       received[expectedseqnum] = false; /*aaaaaaaaa mark as delivered*/
       expectedseqnum = (expectedseqnum + 1) % SEQSPACE;
     }
