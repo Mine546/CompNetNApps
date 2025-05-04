@@ -54,7 +54,14 @@ bool IsCorrupted(struct pkt packet)
     return (true);
 }
 
-
+bool inWindow(int base, int seq) {
+    int end = (base + WINDOWSIZE - 1) % SEQSPACE;
+    if (base <= end) {
+        return (seq >= base && seq <= end);
+    } else {
+        return (seq >= base || seq <= end);
+    }
+}
 /********* Sender (A) variables and functions ************/
 /*aaaaaaaaaaaaaseqspace instead of windowsize, as selective repeat must track each sequence number in the space*/
 static struct pkt buffer[SEQSPACE];  /* array for storing packets waiting for ACK */
@@ -217,12 +224,12 @@ void B_input(struct pkt packet)
     int seq = packet.seqnum;
 
     /* aaaaaaaaaaif packet isnt received, IGNORING ORDER*/
-    if (!received[seq]) {
-      /*aaaa buffer the packet and mark it received*/
-      recv_buffer[seq] = packet;
-      received[seq] = true;
-
-      if (TRACE > 0)
+    /*bbbbb added function to check if seq is in receiving window*/
+    if (!received[seq] && inWindow(expectedseqnum,seq)) {
+        /*aaaa buffer the packet and mark it received*/
+        recv_buffer[seq] = packet;
+        received[seq] = true;
+        if (TRACE > 0)
         printf("----B: packet %d received and buffered\n", seq);
     }
 
