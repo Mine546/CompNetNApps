@@ -56,7 +56,7 @@ bool IsCorrupted(struct pkt packet)
 
 
 /********* Sender (A) variables and functions ************/
-//seqspace instead of windowsize, as selective repeat must track each sequence number in the space
+/*aaaaaaaaaaaaaseqspace instead of windowsize, as selective repeat must track each sequence number in the space*/
 static struct pkt buffer[SEQSPACE];  /* array for storing packets waiting for ACK */
 static int windowfirst, windowlast;    /* array indexes of the first/last packet awaiting ACK */
 static int windowcount;                /* the number of packets currently awaiting an ACK */
@@ -204,54 +204,60 @@ void A_init(void)
 
 static int expectedseqnum; /* the sequence number expected next by the receiver */
 static int B_nextseqnum;   /* the sequence number for the next packets sent by B */
-static struct pkt recv_buffer[SEQSPACE];  // to store received packets
-static bool received[SEQSPACE];           // track received sequence numbers
+static struct pkt recv_buffer[SEQSPACE];  /* aaaaaaaaaaaaato store received packets*/
+static bool received[SEQSPACE];           /* aaaaaaaaaaaaaatrack received sequence numbers*/
 
 /* called from layer 3, when a packet arrives for layer 4 at B*/
 void B_input(struct pkt packet)
 {
-  struct pkt sendpkt;
+  struct pkt ackpkt;
   int i;
+    /*aaaaaaaaif not corrupted*/
+  if (!IsCorrupted(packet)) {
+    int seq = packet.seqnum;
 
-  /* if not corrupted and received packet is in order */
-  if  ( (!IsCorrupted(packet))  && (packet.seqnum == expectedseqnum) ) {
-    if (TRACE > 0)
-      printf("----B: packet %d is correctly received, send ACK!\n",packet.seqnum);
-    packets_received++;
+    /* aaaaaaaaaaif packet isnt received, IGNORING ORDER*/
+    if (!received[seq]) {
+      /*aaaa buffer the packet and mark it received*/
+      recv_buffer[seq] = packet;
+      received[seq] = true;
 
-    /* deliver to receiving application */
-    tolayer5(B, packet.payload);
+      if (TRACE > 0)
+        printf("----B: packet %d received and buffered\n", seq);
+    }
 
-    /* send an ACK for the received packet */
-    sendpkt.acknum = expectedseqnum;
+    /* aaaaaaaaasend ACK for this packet regardless of order*/
+    ackpkt.acknum = seq;
 
-    /* update state variables */
-    expectedseqnum = (expectedseqnum + 1) % SEQSPACE;
-  }
-  else {
-    /* packet is corrupted or out of order resend last ACK */
-    if (TRACE > 0)
-      printf("----B: packet corrupted or not expected sequence number, resend ACK!\n");
+    /* aaaaaaaadeliver in-order packets starting from expectedseqnum*/
+    while (received[expectedseqnum]) {
+      tolayer5(B, recv_buffer[expectedseqnum].payload);
+      received[expectedseqnum] = false; /*aaaaaaaaa mark as delivered*/
+      expectedseqnum = (expectedseqnum + 1) % SEQSPACE;
+    }
+  } else {
+    /*aaaaaaaaaaaa corrupted, resend last ACK*/
     if (expectedseqnum == 0)
-      sendpkt.acknum = SEQSPACE - 1;
+      ackpkt.acknum = SEQSPACE - 1;
     else
-      sendpkt.acknum = expectedseqnum - 1;
+      ackpkt.acknum = expectedseqnum - 1;
+
+    if (TRACE > 0)
+      printf("----B: corrupted packet received, resending ACK for %d\n", ackpkt.acknum);
   }
 
-  /* create packet */
-  sendpkt.seqnum = B_nextseqnum;
+  /*aaaaaaaaaaaaa fill the rest of the ACK packet fields*/
+  ackpkt.seqnum = B_nextseqnum;
   B_nextseqnum = (B_nextseqnum + 1) % 2;
 
-  /* we don't have any data to send.  fill payload with 0's */
-  for ( i=0; i<20 ; i++ )
-    sendpkt.payload[i] = '0';
+  for (i = 0; i < 20; i++)
+    ackpkt.payload[i] = '0';
 
-  /* computer checksum */
-  sendpkt.checksum = ComputeChecksum(sendpkt);
-
-  /* send out packet */
-  tolayer3 (B, sendpkt);
+  ackpkt.checksum = ComputeChecksum(ackpkt);
+  tolayer3(B, ackpkt);
 }
+
+
 
 /* the following routine will be called once (only) before any other */
 /* entity B routines are called. You can use it to do any initialization */
@@ -259,8 +265,9 @@ void B_init(void)
 {
   expectedseqnum = 0;
   B_nextseqnum = 1;
-  //ensures that all spaces are correctly classified as empty before starting transfer
-  for (int i = 0; i < SEQSPACE; i++) {
+  /*aaaaaaaaensures that all spaces are correctly classified as empty before starting transfer*/
+  int i;
+  for (i = 0; i < SEQSPACE; i++) {
     received[i] = false;
   }
 }
