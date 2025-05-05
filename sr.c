@@ -128,7 +128,7 @@ void A_input(struct pkt packet)
 {
     if (!IsCorrupted(packet)) {
         if (TRACE > 0)
-            printf("----A: uncorrupted ACK %d received\n", packet.acknum);
+            printf("----A: uncorrupted ACK %d is received\n", packet.acknum);
 
         total_ACKs_received++;
 
@@ -139,7 +139,10 @@ void A_input(struct pkt packet)
             /* Mark the packet as acknowledged*/
             acked[acknum] = true;
             timer_active[acknum] = false;
+            if (TRACE > 0)
+              printf("----A: ACK %d is not a duplicate\n",packet.acknum);
             new_ACKs++;
+
 
             /* Slide window forward as long as the first packet is ACKed*/
             while (windowcount > 0 && acked[windowbase]) {
@@ -158,7 +161,7 @@ void A_input(struct pkt packet)
                 stoptimer(A);            
         } else {
             if (TRACE > 0)
-                printf("----A: ACK %d not in current window, ignored\n", acknum);
+                printf("----A: duplicate ACK received, do nothing!\n", acknum);
         }
     } else {
         if (TRACE > 0)
@@ -171,13 +174,16 @@ void A_timerinterrupt(void)
 {
   bool any_timer_active = false;
   int i;
+  if (TRACE > 0)
+    printf("----A: time out,resend packets!\n");
+
   for (i = 0; i < SEQSPACE; i++) {
     if (timer_active[i] && !acked[i]) {
         /* Timeout detected — resend packet */
         tolayer3(A, buffer[i]);
         packets_resent++;
         if (TRACE > 0)
-          printf("----A: Timeout on packet %d, resending.\n", i);
+          printf("----A: resending packet %d\n", (buffer[(windowfirst+i) % WINDOWSIZE]).seqnum);
       }
       if(timer_active[i] && !acked[i]){
         any_timer_active=true;
@@ -235,7 +241,7 @@ void B_input(struct pkt packet)
         recv_buffer[seq] = packet;
         received[seq] = true;
         if (TRACE > 0)
-        printf("----B: packet %d received and buffered\n", seq);
+        printf("----B: packet %d is correctly received, send ACK!\n",packet.seqnum);
     }
 
     /* aaaaaaaaasend ACK for this packet regardless of order*/
@@ -256,7 +262,7 @@ void B_input(struct pkt packet)
       ackpkt.acknum = expectedseqnum - 1;
 
     if (TRACE > 0)
-      printf("----B: corrupted packet received, resending ACK for %d\n", ackpkt.acknum);
+      printf("----B: packet corrupted or not expected sequence number, resend ACK!\n");
   }
 
   /*aaaaaaaaaaaaa fill the rest of the ACK packet fields*/
