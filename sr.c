@@ -106,17 +106,8 @@ void A_output(struct msg message)
     timer_active[sendpkt.seqnum] = true;
 
     /* start timer if first packet in window */
-    bool timer_running = false;
-    int j;
-    for (j = 0; j < SEQSPACE; j++) {
-      if (timer_active[j]) {
-        timer_running = true;
-          break;
-      }
-  }
-  if (!timer_running) {
-      starttimer(A, RTT);
-  }
+    if (windowcount == 1)
+      starttimer(A,RTT);
 
     /* get next sequence number, wrap back to 0 */
     A_nextseqnum = (A_nextseqnum + 1) % SEQSPACE;
@@ -144,7 +135,7 @@ void A_input(struct pkt packet)
         int acknum = packet.acknum;
 
 
-        if (inWindow(windowbase, acknum) && !acked[acknum]) {
+        if (inWindow(windowbase, acknum)) {
             /* Mark the packet as acknowledged*/
             acked[acknum] = true;
             timer_active[acknum] = false;
@@ -155,20 +146,19 @@ void A_input(struct pkt packet)
 
             /* Slide window forward as long as the first packet is ACKed*/
             while (windowcount > 0 && acked[windowbase]) {
+              acked[windowbase] = false;
               timer_active[windowbase] = false;
               windowbase = (windowbase + 1) % SEQSPACE;
               windowcount--;
             }
 
-            bool active;
-            active = false;
+            bool active = false;
             int i;
-            for (i = 0; i < SEQSPACE; i++){
+            for (i = 0; i < SEQSPACE; i++)
                 if (timer_active[i]) active = true;
-            }
-            if (!active){
-                stoptimer(A);
-              }            
+
+            if (!active)
+                stoptimer(A);            
         } else {
             if (TRACE > 0)
                 printf("----A: duplicate ACK received, do nothing!\n", acknum);
@@ -180,9 +170,9 @@ void A_input(struct pkt packet)
 }
 
 /* called when A's timer goes off */
-void A_timerinterrupt(void) {
-  bool any_timer_active;
-  any_timer_active = false;
+void A_timerinterrupt(void)
+{
+  bool any_timer_active = false;
   int i;
   if (TRACE > 0)
     printf("----A: time out,resend packets!\n");
@@ -190,23 +180,20 @@ void A_timerinterrupt(void) {
   for (i = 0; i < SEQSPACE; i++) {
     if (timer_active[i] && !acked[i]) {
         /* Timeout detected — resend packet */
-        
-        packet_timer[i]+=1.0;
-        if (packet_timer[i] >= RTT) {
-          tolayer3(A, buffer[i]);
-          packets_resent++;
-          packet_timer[i] = 0.0;
-          if (TRACE > 0){
-            printf("----A: resending packet %d\n", (buffer[(windowfirst+i) % WINDOWSIZE]).seqnum);
-          }
-        }
+        tolayer3(A, buffer[i]);
+        packets_resent++;
+        if (TRACE > 0)
+          printf("----A: resending packet %d\n", (buffer[(windowfirst+i) % WINDOWSIZE]).seqnum);
       }
-
+      if(timer_active[i] && !acked[i]){
+        any_timer_active=true;
+      }
     }
-    if (any_timer_active) {
-      starttimer(A, 1.0);  /* Reschedule next check*/
-    }
-    
+  
+    /* Keep the periodic timer going if any packet is still waiting*/
+  if (any_timer_active) {
+    starttimer(A, 1.0);  /* Reschedule next check*/
+  }
 }
 
 
